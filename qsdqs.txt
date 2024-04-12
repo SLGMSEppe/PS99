@@ -1,0 +1,444 @@
+local GetGlobal = getgenv and getgenv()
+
+for i,v in next, game.GetChildren(game) do
+    GetGlobal[v.ClassName] = v
+end
+
+GetGlobal.wait = task.wait
+GetGlobal.spawn = task.spawn
+GetGlobal.Player = Players.LocalPlayer
+GetGlobal.Kick = Player.Kick
+GetGlobal.Error = ScriptContext.Error
+GetGlobal.Idled = Player.Idled
+GetGlobal.MessageOut = LogService.MessageOut
+GetGlobal.Stepped = RunService.Stepped
+GetGlobal.RenderStepped = RunService.RenderStepped
+GetGlobal.Heartbeat = RunService.Heartbeat
+GetGlobal.PreRender = RunService.PreRender
+GetGlobal.PreSimulation = RunService.PreSimulation
+GetGlobal.PostSimulation = RunService.PostSimulation
+GetGlobal.Settings = {}
+GetGlobal.Verison = "v1"
+GetGlobal.SP = {}
+GetGlobal.IsSP = false
+GetGlobal.Owner = "SPLGMS"
+GetGlobal.Helper = "jefontposs"
+GetGlobal.User = Instance.new("VirtualInputManager")
+GetGlobal.AFK = false
+GetGlobal.Character = Player.Character or Player.CharacterAdded:Wait()
+GetGlobal.Protecter = Instance.new("Model", CoreGui)
+GetGlobal.GameId = game.GameId
+GetGlobal.AllPlayers = {}
+Protecter.RobloxLocked = true
+
+SP.Mag = function(Pos1, Pos2)
+    return (Pos1.Position - Pos2.Position).Magnitude
+end
+-- SP.Mag(Player.Character:GetModelCFrame(), Workspace.Part1) < 50 -- true
+SP.Teleport = function(Pos)
+    Player.Character:PivotTo(CFrame.new(Pos))
+end
+-- SP.Teleport(Vector3.new(0,0,0), nil)
+SP.GetNearestPlayerToBasePart = function(BasePart)
+    for i,v in next, Players:GetPlayers() do
+        local Radius = gethiddenproperty(v, "SimulationRadius")
+        if (v.Character:GetModelCFrame().Position - BasePart.Position).Magnitude > Radius and v ~= Player then
+            return true
+        else
+            return false
+        end
+    end
+    return false
+end
+-- SP.GetNearestPlayerToBasePart(Workspace.Part1) -- true
+SP.isnetworkowner = isnetworkowner or function(BasePart)
+    if BasePart:IsA("BasePart") then
+        local Radius = gethiddenproperty(Player, "SimulationRadius")
+        if (BasePart:IsDescendantOf(Player.Character) or SP.Mag(Player.Character:GetModelCFrame(), BasePart) <= Radius) and not SP.GetNearestPlayerToBasePart(BasePart) then
+            return true
+        else
+            return false
+        end
+    end
+    return false
+end
+--SP.isnetworkowner(Player.Character.HumanoidRootPart) -- true
+SP.FireConnection = function(Signal)
+    if not getconnections then
+        error("No getconnections detected sorry")
+    else
+        for i,v in next, getconnections(Signal) do
+            v:Fire()
+        end
+    end
+end
+--SP.FireConnection(Player.PlayerGui.Button.MouseButton1Click)
+SP.DisableConnection = function(Signal)
+    if not getconnections then
+        error("No getconnections Detected wth")
+    else
+        for i,v in next, getconnections(Signal) do
+            v:Disable()
+        end
+    end
+end
+
+-- SP.DisableConnection(ScriptContext.Error)
+
+SP.Tween = function(Object1, Object2, Speed, Offset, Wait)
+    if Object1 and Object2 then
+        local Timing = SP.Mag(Object1, Object2) / Speed
+        local TweenInfo = TweenInfo.new(Timing, Enum.EasingStyle.Linear)
+        local TweenSystem = TweenService:Create(Object1, TweenInfo, {CFrame = CFrame.new(Object2.Position + Offset)})
+        TweenSystem:Play()
+        if Wait then
+            TweenSystem.Completed:Wait()
+        end
+    end
+end
+--SP.Tween(Player.Character:GetModelCFrame(), CFrame.new(0,0,0), 12, Vector3.new(0,0,0), true)
+
+SP.ServerHop = function()
+    spawn(function()
+        while wait() do
+            pcall(function()
+                local Gay = HttpService:JSONDecode(game:HttpGet('https://games.roblox.com/v1/games/' .. game.PlaceId .. '/servers/Public?sortOrder=Asc&limit=100'))
+                for i,v in next, Gay.data do
+                    if v.playing < v.maxPlayers then
+                        TeleportService:TeleportToPlaceInstance(game.PlaceId, v.id, Player)
+                        break
+                    end
+                end
+            end)
+            wait(4)
+        end
+    end)
+end
+-- SP.ServerHop()
+SP.Rejoin = function()
+    return TeleportService:Teleport(game.PlaceId, Player)
+end
+
+--SP.Rejoin()
+
+SP.NoClip = function()
+    for i,v in next, Player.Character:GetChildren() do
+        if v:IsA("BasePart") then
+            v.CanCollide = false
+            v.Velocity = Vector3.new(0,0,0)
+        end
+    end
+end
+
+--SP.NoClip()
+
+SP.GetTool = function(Name)
+    if Player.Backpack:FindFirstChild(Name) then
+        Player.Character.Humanoid:EquipTool(Player.Backpack:FindFirstChild(Name))
+    end
+end
+
+-- SP.GetTool("Sword")
+
+SP.FFD = function(Parent, Instance)
+    return Parent:FindFirstChild(Instance, true)
+end
+
+-- if SP.FFD(Workspace, "Part") then print(true) end
+
+SP.FFC = function(Parent, Instance)
+    return Parent:FindFirstChild(Instance)
+end
+
+-- if SP.FFC(Workspace, "Part") then print("Found FirstChild Of Parent") end
+
+SP.Wait = function(Parent, Instance)
+    return Parent:WaitForChild(Instance)
+end
+
+--print(SP.Wait(Workspace))
+
+SP.KeyPress = function(PressDown, Key, Repeated, Instance, TimesPressed)
+    if User then
+        User:SendKeyEvent(PressDown, Key, Repeated, Instance, TimesPressed)
+    end
+end
+-- SP.KeyPress(true, "E", false, game, 0)
+
+SP.GetProtecter = function()
+    return Protecter
+end
+-- print(SP.Protecter()) -- Model, Parent CoreGui
+
+SP.SetGuiParent = function(Gui)
+    if Gui then
+        Gui.RobloxLocked = true
+        Gui.Parent = SP.GetProtecter()
+    end
+end
+
+SP.NoClip = function()
+    for i,v in next, Player.Character:GetChildren() do
+        if v:IsA("BasePart") then
+            v.CanCollide = false
+            v.Velocity = Vector3.new(0,0,0)
+        end
+    end
+end
+
+--SP.NoClip()
+
+SP.GetPos = function(Instance)
+    if Instance then
+        if Instance:IsA("BasePart") then
+            return Instance.Position
+        elseif Instance:IsA("Model") then
+            return Instance:GetModelCFrame().Position
+        end
+    end
+end
+
+-- SP.GetPos(Character) -- Character Position
+
+SP.PlayersTable = function()
+    local Ta = {}
+    for i,v in next, Players:GetPlayers() do -- why the fuck do i have to do this for dropdowns
+        if not table.find(Ta, v.Name) and v ~= Player then
+            table.insert(Ta, v.Name)
+        end
+    end
+    return Ta
+end
+--  SP.PlayersTable() -- Table of players names
+
+SP.GetHumanoid = function()
+    return Player.Character:FindFirstChildWhichIsA("Humanoid")
+end
+--SP.GetHumanoid() Grabs Humanoid of Player.Character
+
+SP.GetRoot = function()
+    return Player.Character.PrimaryPart
+end
+--SP.GetRoot() Grabs RootPart of Character
+
+SP.IsA= function(Parent, Instance)
+    return Parent:FindFirstChildWhichIsA(Instance, true)
+end
+SP.SendNotification = function(Title, Text, Icon, Duration)
+    return StarterGui:SetCore("SendNotification", {Title = Title, Text = Text, Icon = Icon, Duration = Duration})
+end
+
+
+SP.SynScriptDump = function()
+    local final = {'<roblox xmlns:xmime="http://www.w3.org/2005/05/xmlmime" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.roblox.com/roblox.xsd" version="4">'}
+    local hierarchy = {["NIL"] = {Class = "Folder", Children = {}}, ["LOADED MODULES"] = {Class = "Folder", Children = {}}}
+    local totalScriptCount = 0
+    local doneScripts = 0
+    local needsDecompile = {}
+    local loadedIds = {}
+    local startTime = tick()
+
+    local Settings = {
+    Scripts = {"LocalScript", "ModuleScript"},
+    Remotes = {"RemoteEvent", "RemoteFunction", "BindableEvent", "BindableFunction"},
+    Services = {"StarterPlayerScripts", "StarterCharacterScripts"},
+    Replace = {["'"] = "&apos;", ["\""] = "&quot;", ["<"] = "&lt;", [">"] = "&gt;", ["&"] = "&amp;"},
+    Threads = 5,
+    Version = 4,
+    }
+
+    local ignored = {
+    game:GetService("RobloxReplicatedStorage"),
+    game:GetService("CoreGui"),
+    game:GetService("CorePackages"), 
+    game:GetService("Chat"),
+    --game:GetService("StarterPlayer").StarterPlayerScripts.PlayerModule,
+    --game:GetService("Players").LocalPlayer.PlayerScripts.PlayerModule,
+    }
+
+    for _, plr in next, game:GetService("Players"):GetPlayers() do
+    if plr ~= game:GetService("Players").LocalPlayer then
+    ignored[#ignored + 1] = plr
+    ignored[#ignored + 1] = plr.Character
+    end
+    end
+
+    local viewPort = workspace.CurrentCamera.ViewportSize
+    local completeBar = Drawing.new("Square")
+    completeBar.Filled = true
+    completeBar.Size = Vector2.new(500, 25)
+    completeBar.Position = Vector2.new(viewPort.X / 2 - completeBar.Size.X / 2, viewPort.Y - 100)
+    completeBar.Color = Color3.new(0, 0, 0)
+    completeBar.Visible = true
+
+    local progressBar = Drawing.new("Square")
+    progressBar.Color = Color3.new(1, 1, 1)
+    progressBar.Filled = true
+    progressBar.Position = completeBar.Position
+    progressBar.Size = Vector2.new(0, 25)
+    progressBar.Color = Color3.new(1, 1, 1)
+    progressBar.Visible = true
+
+    local progressText = Drawing.new("Text")
+    progressText.Color = Color3.new(1, 1, 1)
+    progressText.Center = true
+    progressText.Size = progressBar.Size.Y
+    progressText.Position = progressBar.Position + Vector2.new(completeBar.Size.X / 2, 35)
+    progressText.Text = string.format("Welcome to savescirpts vee%d!", Settings.Version)
+    progressText.Color = Color3.new(1, 1, 1)
+    progressText.Visible = true
+
+    local credits = Drawing.new("Text")
+    credits.Color = Color3.new(1, 1, 1)
+    credits.Position = Vector2.new(viewPort.X - 100, viewPort.Y - 25)
+    credits.Size = 15
+    credits.Text = "turtle hub when?"
+    credits.Color = Color3.new(1, 1, 1)
+    credits.Visible = true
+
+    local function isCleared(itm)
+    for _, obj in next, ignored do
+    if itm == obj or itm:IsDescendantOf(obj) then
+    return false
+    end
+    end 
+    return true
+    end
+
+    local function getParentTree(itm)
+    local trees = {}
+    while itm.Parent ~= nil and itm.Parent ~= game do
+    itm = itm.Parent
+    table.insert(trees, 1, itm)
+    end
+    return trees
+    end
+
+    function getScripts(place, checkLoaded)
+    for _, item in next, place do
+    if typeof(item) == "Instance" and isCleared(item) then
+    if table.find(Settings.Remotes, item.ClassName) or table.find(Settings.Scripts, item.ClassName) then
+    local uniqueId = item:GetDebugId()
+    --print("Script Collected:", item:GetFullName())
+
+    if item.Parent == nil then
+    hierarchy["NIL"].Children[uniqueId] = {Class = item.ClassName, Ref = item, Children = {}}
+    else
+    local start = hierarchy
+    for _, branch in next, getParentTree(item) do
+    local branchId = branch:GetDebugId()
+    if start[branchId] == nil then
+    if game:FindService(branch.ClassName) or table.find(Settings.Services, branch.ClassName) then
+    start[branchId] = {Class = branch.ClassName, Ref = branch, Children = {}}
+    else
+    start[branchId] = {Class = "Folder", Ref = branch, Children = {}}
+    end
+    end
+    start = start[branchId].Children
+    end
+    start[uniqueId] = {Class = item.ClassName, Ref = item, Children = {}}
+    end
+
+    if checkLoaded then
+    if table.find(Settings.Scripts, item.ClassName) and not table.find(loadedIds, uniqueId) then
+    hierarchy["LOADED MODULES"].Children[uniqueId] = {Class = item.ClassName, Ref = item, Children = {}}
+    end
+    else
+    loadedIds[#loadedIds + 1] = uniqueId
+    end
+    end
+    end
+    end
+    end
+
+    wait(2)
+    progressText.Text = "Collecting scripts..."
+    getScripts(game:GetDescendants())
+    getScripts(getnilinstances())
+    getScripts(getloadedmodules(), true)
+    loadedIds = nil
+
+    local function makeInstance(class, name, scr)
+    final[#final + 1] = '<Item class="' .. class .. '" referent="RBX' .. #final .. '"><Properties>'
+    final[#final + 1] = '<string name="Name">' .. string.gsub(name, "['\"<>&]", Settings.Replace) .. '</string>'
+
+    if scr and table.find(Settings.Scripts, scr.ClassName) then
+    if scr.ClassName == "LocalScript" then
+    final[#final + 1] = '<bool name="Disabled">' .. tostring(scr.Disabled) .. '</bool>'
+    end
+    final[#final + 1] = '<ProtectedString name="Source"><![CDATA['
+    final[#final + 1] = "" -- haha funny stole from moon
+    final[#final + 1] = ']]></ProtectedString>'
+    needsDecompile[#needsDecompile + 1] = {Script = scr, Index = #final - 1}
+    end
+    final[#final + 1] = "</Properties>"
+    end
+
+    function saveHierarchy(tree)
+    for nm, obj in next, tree do
+    makeInstance(obj.Class, obj.Ref and obj.Ref.Name or nm, obj.Ref)
+    saveHierarchy(obj.Children)
+    final[#final + 1] = "</Item>"
+    end
+    end
+
+    progressText.Text = "Creating xml layout..."
+    saveHierarchy(hierarchy)
+    totalScriptCount = #needsDecompile
+    final[#final + 1] = "</roblox>"
+    progressText.Text = string.format("Decompiling %d scripts...", totalScriptCount)
+
+    local runningCount = Settings.Threads
+    for i=1, Settings.Threads do
+    spawn(function()
+    while #needsDecompile > 0 do
+    local info = table.remove(needsDecompile)
+    local result = decompile(info.Script, false, 30)
+    final[info.Index] = (result == "" and "-- Failed to decompile script, or script is empty" or result)
+    wait()
+    doneScripts = doneScripts + 1
+    progressBar.Size = Vector2.new(500 * doneScripts / totalScriptCount, progressBar.Size.Y)
+    progressText.Text = string.format("Decompiling scripts... (%d / %d)", doneScripts, totalScriptCount)
+    end
+    runningCount = runningCount - 1
+    end)
+    end
+
+    while runningCount > 0 do
+    wait(0.5)
+    end
+
+    wait(1)
+    progressBar.Remove()
+    completeBar.Remove()
+    local gameName = string.gsub(game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name, "[^%w%s]", "")
+    local saveName = string.format("Scripts for %s (%d) [%d].rbxlx", string.gsub(gameName, "  ", " "), game.PlaceId, os.time())
+    writefile(saveName, table.concat(final, "\n"))
+    progressText.Text = string.format("Scripts have been saved to file %q, took %d seconds for %d scripts", saveName, tick() - startTime, totalScriptCount)
+
+end
+
+--Loops
+
+for i,v in next, Players:GetPlayers() do
+    if v ~= Player then
+        table.insert(AllPlayers, v.Name)
+    end
+end
+
+Players.PlayerAdded:Connect(function(v)
+    if v ~= Player then
+        table.insert(AllPlayers, v.Name)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(v)
+    if v ~= Player then 
+        local String = table.find(AllPlayers, v.Name)
+        table.remove(AllPlayers, String)
+    end
+end)
+
+RenderStepped:Connect(function()
+    SP.GetProtecter().Name = HttpService:GenerateGUID()
+end)
